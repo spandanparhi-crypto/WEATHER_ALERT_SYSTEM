@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KhetMausam – Weather Alert System for Farmers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --soil:   #2C1A0E;
+      --bark:   #3E2A14;
+      --wheat:  #E8B84B;
+      --sky:    #5BA4CF;
+      --rain:   #3D7EBF;
+      --alert:  #D94F2B;
+      --grass:  #4B8B3B;
+      --mist:   #F0EBE0;
+      --cream:  #FAF6EE;
+      --text:   #1C1008;
+      --sub:    #6B4F30;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--soil);
+      color: var(--cream);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 3px solid var(--wheat);
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--wheat); }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 0.85rem;
+      color: var(--mist);
+    }
+    .live-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #4ecd65;
+      box-shadow: 0 0 0 3px rgba(78,205,101,0.25);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 3px rgba(78,205,101,0.25); }
+      50%      { box-shadow: 0 0 0 6px rgba(78,205,101,0.05); }
+    }
+
+    /* ── HERO BANNER ── */
+    .hero {
+      background: linear-gradient(135deg, var(--soil) 0%, var(--bark) 60%, #1a3a20 100%);
+      color: var(--cream);
+      padding: 48px 32px 40px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+    .hero h1 em {
+      color: var(--wheat);
+      font-style: normal;
+    }
+    .hero p {
+      font-size: 1rem;
+      color: var(--mist);
+      max-width: 500px;
+      line-height: 1.6;
+    }
+    .location-pill {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 40px;
+      padding: 8px 18px;
+      font-size: 0.85rem;
+      color: var(--mist);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .location-pill:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── ALERT BAR ── */
+    .alert-bar {
+      background: var(--alert);
+      color: #fff;
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+    .alert-bar .icon { font-size: 1.3rem; }
+    .alert-bar.hidden { display: none; }
+    .alert-close {
+      margin-left: auto;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: #fff;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── MAIN GRID ── */
+    main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+    .section-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--sub);
+      margin-bottom: 16px;
+    }
+
+    /* ── CURRENT CONDITIONS GRID ── */
+    .conditions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .cond-card {
+      background: #fff;
+      border: 1px solid #e8e0d0;
+      border-radius: 16px;
+      padding: 20px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .cond-icon { font-size: 2rem; }
+    .cond-label { font-size: 0.78rem; color: var(--sub); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cond-value { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .cond-unit { font-size: 0.75rem; color: var(--sub); margin-top: -4px; }
+
+    /* ── FORECAST STRIP ── */
+    .forecast-strip {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 40px;
+      scrollbar-width: none;
+    }
+    .forecast-strip::-webkit-scrollbar { display: none; }
+    .fc-card {
+      background: #fff;
+      border: 1px solid #e8e0d0;
+      border-radius: 14px;
+      padding: 16px 20px;
+      min-width: 110px;
+      text-align: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .fc-card.today { background: var(--soil); color: #fff; border-color: var(--soil); }
+    .fc-card.today .fc-day { color: var(--wheat); }
+    .fc-card.today .fc-detail { color: rgba(255,255,255,0.65); }
+    .fc-day { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--sub); margin-bottom: 8px; }
+    .fc-icon { font-size: 2rem; margin: 4px 0; }
+    .fc-temp { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; }
+    .fc-detail { font-size: 0.75rem; color: var(--sub); margin-top: 4px; }
+    .alert-badge {
+      position: absolute;
+      top: -6px; right: -6px;
+      background: var(--alert);
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    /* ── FARM ALERTS SECTION ── */
+    .alerts-section { margin-bottom: 40px; }
+    .alerts-list { display: flex; flex-direction: column; gap: 12px; }
+    .alert-item {
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      border-left: 5px solid transparent;
+    }
+    .alert-item.danger  { background: #fff3f1; border-color: var(--alert); }
+    .alert-item.warning { background: #fff9ec; border-color: var(--wheat); }
+    .alert-item.info    { background: #f0f6ff; border-color: var(--sky); }
+    .alert-item.good    { background: #f0fbf0; border-color: var(--grass); }
+    .alert-icon { font-size: 1.8rem; flex-shrink: 0; }
+    .alert-content h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .alert-content p  { font-size: 0.88rem; color: var(--sub); line-height: 1.5; }
+    .alert-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: auto;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+    .danger  .alert-tag { background: var(--alert);   color: #fff; }
+    .warning .alert-tag { background: var(--wheat);   color: var(--soil); }
+    .info    .alert-tag { background: var(--sky);     color: #fff; }
+    .good    .alert-tag { background: var(--grass);   color: #fff; }
+
+    /* ── BOTTOM GRID: CROP + SUBSCRIBE ── */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 700px) {
+      .bottom-grid { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; }
+      .hero .location-pill { display: none; }
+      main { padding: 20px; }
+      header { padding: 0 16px; }
+      .alert-bar { padding: 10px 16px; }
+    }
+
+    /* ── CROP ADVISORY ── */
+    .crop-box {
+      background: #fff;
+      border: 1px solid #e8e0d0;
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .crop-select-wrap { margin-bottom: 16px; }
+    .crop-select-wrap select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d4c8b0;
+      border-radius: 10px;
+      background: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      color: var(--text);
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B4F30' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+    .advisory-box {
+      background: var(--cream);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.88rem;
+      color: var(--sub);
+      line-height: 1.7;
+      min-height: 80px;
+    }
+    .advisory-box strong { color: var(--text); }
+
+    /* ── SUBSCRIBE BOX ── */
+    .subscribe-box {
+      background: var(--soil);
+      border-radius: 16px;
+      padding: 24px;
+      color: var(--cream);
+    }
+    .subscribe-box h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .subscribe-box p { font-size: 0.85rem; color: var(--mist); margin-bottom: 16px; line-height: 1.5; }
+
+    /* channel toggle */
+    .channel-toggle {
+      display: flex;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+    .channel-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      color: rgba(255,255,255,0.55);
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .channel-btn.active {
+      background: var(--wheat);
+      color: var(--soil);
+      font-weight: 700;
+    }
+
+    /* name + phone inputs */
+    .sub-fields { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .sub-fields input {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .sub-fields input::placeholder { color: rgba(255,255,255,0.35); }
+    .sub-fields input:focus { border-color: var(--wheat); background: rgba(255,255,255,0.16); }
+    .sub-fields input.error { border-color: #ff7a5c; }
+
+    /* alert type chips */
+    .subscribe-options { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .opt-chip {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.78rem; color: var(--mist); cursor: pointer;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 4px 10px;
+      transition: background 0.2s;
+      user-select: none;
+    }
+    .opt-chip:hover { background: rgba(255,255,255,0.14); }
+    .opt-chip.selected { background: rgba(232,184,75,0.2); border-color: var(--wheat); color: var(--wheat); }
+    .opt-chip input[type=checkbox] { display: none; }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--wheat);
+      color: var(--soil);
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* success state */
+    .sub-success {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+      padding: 10px 0;
+    }
+    .sub-success .tick {
+      width: 52px; height: 52px;
+      background: var(--grass);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+    }
+    .sub-success h4 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .sub-success p { font-size: 0.82rem; color: var(--mist); margin: 0; }
+    .sub-success .add-another {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--cream);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+    }
+    .sub-success .add-another:hover { background: rgba(255,255,255,0.2); }
+
+    /* subscriber list */
+    .subscriber-list-wrap {
+      margin-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 14px;
+    }
+    .subscriber-list-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .subscriber-list { display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; }
+    .subscriber-list::-webkit-scrollbar { width: 4px; }
+    .subscriber-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    .sub-row {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+    .sub-row .sub-icon { font-size: 1rem; }
+    .sub-row .sub-name { font-weight: 600; flex: 1; }
+    .sub-row .sub-num  { color: rgba(255,255,255,0.55); }
+    .sub-row .sub-badge {
+      font-size: 0.65rem;
+      background: var(--grass);
+      color: #fff;
+      border-radius: 20px;
+      padding: 2px 7px;
+      font-weight: 700;
+    }
+    .sub-row .sub-badge.wa { background: #25D366; }
+    .sub-remove {
+      background: none; border: none; color: rgba(255,255,255,0.3);
+      cursor: pointer; font-size: 0.9rem; padding: 0 2px;
+      transition: color 0.15s;
+    }
+    .sub-remove:hover { color: #ff7a5c; }
+
+    /* OTP overlay */
+    .otp-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .otp-hint { font-size: 0.82rem; color: var(--mist); line-height: 1.5; }
+    .otp-hint strong { color: var(--wheat); }
+    .otp-boxes { display: flex; gap: 8px; justify-content: center; }
+    .otp-boxes input {
+      width: 44px; height: 48px;
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      border-radius: 10px;
+      border: 1.5px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      outline: none;
+    }
+    .otp-boxes input:focus { border-color: var(--wheat); background: rgba(255,255,255,0.18); }
+    .otp-actions { display: flex; gap: 10px; }
+    .btn-ghost {
+      flex: 1;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--cream);
+      padding: 10px;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.18); }
+    .resend-timer { font-size: 0.78rem; color: rgba(255,255,255,0.45); text-align: center; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.8rem;
+      color: var(--sub);
+      border-top: 1px solid #e8e0d0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Khet<span>Mausam</span></div>
+  <div class="header-right">
+    <span><span class="live-dot"></span>&nbsp; Live Updates</span>
+    <span>📅 <span id="today-date"></span></span>
+  </div>
+</header>
+
+<!-- ALERT BAR -->
+<div class="alert-bar" id="top-alert-bar">
+  <span class="icon">⚠️</span>
+  <span><strong>Heavy Rain Advisory:</strong> Rainfall expected above 80mm in next 24 hrs — avoid pesticide spraying and protect stored harvest.</span>
+  <button class="alert-close" onclick="document.getElementById('top-alert-bar').classList.add('hidden')">✕</button>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <h1>Weather Alerts for<br/><em>Smarter Farming</em></h1>
+    <p>Real-time weather conditions, farm-specific advisories, and early warnings — so you can protect your crops before the weather changes.</p>
+  </div>
+  <div class="location-pill" onclick="alert('Location change coming soon!')">
+    📍 Cuttack, Odisha &nbsp;▾
+  </div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- CURRENT CONDITIONS -->
+  <div class="section-label">Current Conditions — Updated 10 min ago</div>
+  <div class="conditions-grid">
+    <div class="cond-card">
+      <div class="cond-icon">🌡️</div>
+      <div class="cond-label">Temperature</div>
+      <div class="cond-value">34°</div>
+      <div class="cond-unit">Celsius — Feels like 38°</div>
+    </div>
+    <div class="cond-card">
+      <div class="cond-icon">💧</div>
+      <div class="cond-label">Humidity</div>
+      <div class="cond-value">82%</div>
+      <div class="cond-unit">High — Fungal risk elevated</div>
+    </div>
+    <div class="cond-card">
+      <div class="cond-icon">🌬️</div>
+      <div class="cond-label">Wind Speed</div>
+      <div class="cond-value">18</div>
+      <div class="cond-unit">km/h — South-West</div>
+    </div>
+    <div class="cond-card">
+      <div class="cond-icon">🌧️</div>
+      <div class="cond-label">Rainfall (24h)</div>
+      <div class="cond-value">28</div>
+      <div class="cond-unit">mm — Moderate rain</div>
+    </div>
+    <div class="cond-card">
+      <div class="cond-icon">☀️</div>
+      <div class="cond-label">UV Index</div>
+      <div class="cond-value">7</div>
+      <div class="cond-unit">High — Limit noon fieldwork</div>
+    </div>
+    <div class="cond-card">
+      <div class="cond-icon">👁️</div>
+      <div class="cond-label">Visibility</div>
+      <div class="cond-value">4.2</div>
+      <div class="cond-unit">km — Partly cloudy</div>
+    </div>
+  </div>
+
+  <!-- 7-DAY FORECAST -->
+  <div class="section-label">7-Day Forecast</div>
+  <div class="forecast-strip">
+    <div class="fc-card today">
+      <div class="fc-day">Today</div>
+      <div class="fc-icon">⛈️</div>
+      <div class="fc-temp">34°</div>
+      <div class="fc-detail">Thunderstorm</div>
+      <div class="alert-badge">Alert</div>
+    </div>
+    <div class="fc-card">
+      <div class="fc-day">Tue</div>
+      <div class="fc-icon">🌧️</div>
+      <div class="fc-temp">31°</div>
+      <div class="fc-detail">Heavy Rain</div>
+      <div class="alert-badge">Alert</div>
+    </div>
+    <div class="fc-card">
+      <div class="fc-day">Wed</div>
+      <div class="fc-icon">🌦️</div>
+      <div class="fc-temp">30°</div>
+      <div class="fc-detail">Showers</div>
+    </div>
+    <div class="fc-card">
+      <div class="fc-day">Thu</div>
+      <div class="fc-icon">⛅</div>
+      <div class="fc-temp">32°</div>
+      <div class="fc-detail">Partly Cloudy</div>
+    </div>
+    <div class="fc-card">
+      <div class="fc-day">Fri</div>
+      <div class="fc-icon">🌤️</div>
+      <div class="fc-temp">35°</div>
+      <div class="fc-detail">Mostly Sunny</div>
+    </div>
+    <div class="fc-card">
+      <div class="fc-day">Sat</div>
+      <div class="fc-icon">☀️</div>
+      <div class="fc-temp">36°</div>
+      <div class="fc-detail">Clear</div>
+    </div>
+    <div class="fc-card">
+      <div class="fc-day">Sun</div>
+      <div class="fc-icon">🌧️</div>
+      <div class="fc-temp">29°</div>
+      <div class="fc-detail">Rain</div>
+    </div>
+  </div>
+
+  <!-- FARM ALERTS -->
+  <div class="alerts-section">
+    <div class="section-label">Farm Alerts & Advisories</div>
+    <div class="alerts-list">
+      <div class="alert-item danger">
+        <div class="alert-icon">🌩️</div>
+        <div class="alert-content">
+          <h3>Thunderstorm Warning — Next 6 Hours</h3>
+          <p>Lightning and strong winds expected. Secure farm equipment, move livestock to shelter, and avoid open fields. Rainfall may exceed 80mm.</p>
+        </div>
+        <div class="alert-tag">Danger</div>
+      </div>
+      <div class="alert-item warning">
+        <div class="alert-icon">🍄</div>
+        <div class="alert-content">
+          <h3>Fungal Disease Risk — High Humidity</h3>
+          <p>Humidity above 80% for 3 consecutive days increases blast and blight risk in paddy crops. Apply fungicide before rain begins, if possible.</p>
+        </div>
+        <div class="alert-tag">Warning</div>
+      </div>
+      <div class="alert-item warning">
+        <div class="alert-icon">🚫</div>
+        <div class="alert-content">
+          <h3>Avoid Pesticide Spraying Today</h3>
+          <p>High wind speed and incoming rain will reduce effectiveness and cause chemical runoff. Schedule spraying after Thursday when conditions clear.</p>
+        </div>
+        <div class="alert-tag">Warning</div>
+      </div>
+      <div class="alert-item info">
+        <div class="alert-icon">💦</div>
+        <div class="alert-content">
+          <h3>Irrigation Advisory — Suspend Watering</h3>
+          <p>28mm rain received in last 24 hours and more expected. Suspend irrigation for the next 3 days to avoid waterlogging in low-lying fields.</p>
+        </div>
+        <div class="alert-tag">Info</div>
+      </div>
+      <div class="alert-item good">
+        <div class="alert-icon">✅</div>
+        <div class="alert-content">
+          <h3>Good Planting Window — Thursday to Saturday</h3>
+          <p>A 3-day clear spell is forecast from Thursday. Soil moisture will be ideal for transplanting paddy seedlings and sowing short-duration crops.</p>
+        </div>
+        <div class="alert-tag">Good</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM: CROP ADVISORY + SUBSCRIBE -->
+  <div class="bottom-grid">
+
+    <!-- CROP-SPECIFIC ADVISORY -->
+    <div class="crop-box">
+      <div class="section-label">Crop-Specific Advisory</div>
+      <div class="crop-select-wrap">
+        <select id="crop-picker" onchange="updateAdvisory()">
+          <option value="paddy">🌾 Paddy (Rice)</option>
+          <option value="wheat">🌿 Wheat</option>
+          <option value="vegetables">🥦 Vegetables</option>
+          <option value="sugarcane">🎋 Sugarcane</option>
+          <option value="cotton">🌸 Cotton</option>
+          <option value="pulses">🫘 Pulses / Dal</option>
+        </select>
+      </div>
+      <div class="advisory-box" id="advisory-text">
+        <strong>Paddy (Rice):</strong> Current high humidity increases risk of sheath blight and brown spot. Drain excess water from fields after the rain. Hold off on top-dressing urea until dry weather returns on Thursday. Monitor for stem borer activity after the storm.
+      </div>
+    </div>
+
+    <!-- SMS / WHATSAPP ALERTS SUBSCRIPTION -->
+    <div class="subscribe-box">
+      <h3>Get Alerts on Your Phone</h3>
+      <p>Receive SMS and WhatsApp warnings directly when severe weather hits your area — no internet needed in the field.</p>
+
+      <!-- STEP 1: FORM -->
+      <div id="sub-form">
+        <!-- Channel toggle -->
+        <div class="channel-toggle">
+          <button class="channel-btn active" id="btn-sms" onclick="setChannel('sms')">📱 SMS</button>
+          <button class="channel-btn" id="btn-wa"  onclick="setChannel('whatsapp')">💬 WhatsApp</button>
+          <button class="channel-btn" id="btn-both" onclick="setChannel('both')">🔔 Both</button>
+        </div>
+
+        <!-- Name + Phone -->
+        <div class="sub-fields">
+          <input type="text" id="sub-name" placeholder="Your name (e.g. Ramesh Kumar)" maxlength="40"/>
+          <input type="tel"  id="sub-phone" placeholder="10-digit mobile number" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'')"/>
+        </div>
+
+        <!-- Alert type chips -->
+        <div class="subscribe-options" id="alert-chips">
+          <label class="opt-chip selected" onclick="toggleChip(this)"><input type="checkbox" checked/> ⛈️ Storm</label>
+          <label class="opt-chip selected" onclick="toggleChip(this)"><input type="checkbox" checked/> 🌧️ Heavy Rain</label>
+          <label class="opt-chip selected" onclick="toggleChip(this)"><input type="checkbox" checked/> 📅 Daily Forecast</label>
+          <label class="opt-chip" onclick="toggleChip(this)"><input type="checkbox"/> ❄️ Frost</label>
+          <label class="opt-chip" onclick="toggleChip(this)"><input type="checkbox"/> 🔥 Heatwave</label>
+          <label class="opt-chip" onclick="toggleChip(this)"><input type="checkbox"/> 🐛 Pest Alert</label>
+        </div>
+
+        <button class="btn-primary" id="sub-btn" onclick="startSubscribe()">Send Verification Code →</button>
+      </div>
+
+      <!-- STEP 2: OTP -->
+      <div class="otp-wrap" id="otp-wrap">
+        <p class="otp-hint">A 4-digit code was sent to <strong id="otp-phone-display"></strong> via <strong id="otp-channel-display"></strong>. Enter it below to confirm.</p>
+        <div class="otp-boxes">
+          <input type="tel" maxlength="1" id="otp1" oninput="otpNext(this,'otp2')" onkeydown="otpBack(event,this,null)"/>
+          <input type="tel" maxlength="1" id="otp2" oninput="otpNext(this,'otp3')" onkeydown="otpBack(event,this,'otp1')"/>
+          <input type="tel" maxlength="1" id="otp3" oninput="otpNext(this,'otp4')" onkeydown="otpBack(event,this,'otp2')"/>
+          <input type="tel" maxlength="1" id="otp4" oninput="otpNext(this,null)"   onkeydown="otpBack(event,this,'otp3')"/>
+        </div>
+        <div class="resend-timer" id="resend-timer">Resend code in <span id="resend-count">30</span>s</div>
+        <div class="otp-actions">
+          <button class="btn-ghost" onclick="cancelOtp()">← Back</button>
+          <button class="btn-primary" style="flex:2" onclick="verifyOtp()">Verify & Subscribe</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: SUCCESS -->
+      <div class="sub-success" id="sub-success">
+        <div class="tick">✅</div>
+        <h4 id="success-title">Subscribed!</h4>
+        <p id="success-msg"></p>
+        <button class="add-another" onclick="resetSubscribeForm()">+ Add Another Number</button>
+      </div>
+
+      <!-- Subscriber list -->
+      <div class="subscriber-list-wrap" id="subscriber-list-wrap" style="display:none">
+        <div class="subscriber-list-label">Active Subscribers (<span id="sub-count">0</span>)</div>
+        <div class="subscriber-list" id="subscriber-list"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  KhetMausam — Weather intelligence built for Indian farmers &nbsp;|&nbsp; Data sourced from IMD &amp; local sensors &nbsp;|&nbsp; Odisha Agricultural Department
+</footer>
+
+<script>
+  /* ── DATE ── */
+  const d = new Date();
+  document.getElementById('today-date').textContent =
+    d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+
+  /* ── CROP ADVISORY ── */
+  const advisories = {
+    paddy:      "<strong>Paddy (Rice):</strong> High humidity raises sheath blight and brown spot risk. Drain excess water after rain. Hold urea top-dressing until dry weather returns Thursday. Watch for stem borer after the storm.",
+    wheat:      "<strong>Wheat:</strong> Conditions not ideal for wheat growth this week. If wheat is stored, ensure warehouse ventilation is open to avoid moisture damage from high humidity.",
+    vegetables: "<strong>Vegetables:</strong> Protect leafy greens from storm damage — use netting or temporary covers. After rain, spray copper-based fungicide to prevent downy mildew. Avoid harvest during wet periods.",
+    sugarcane:  "<strong>Sugarcane:</strong> Waterlogging may stress young sugarcane roots. Clear drainage channels before heavy rain arrives. No foliar spraying this week — wait for clear conditions.",
+    cotton:     "<strong>Cotton:</strong> High humidity can trigger boll rot and leaf curl virus spread by whiteflies. Scout fields after rain. Delay picking — wet cotton spoils in storage.",
+    pulses:     "<strong>Pulses / Dal:</strong> Excess moisture can cause pod shedding and root rot. Ensure proper field drainage. Avoid irrigation. Thursday to Saturday window is good for sowing short-duration pulses."
+  };
+  function updateAdvisory() {
+    const crop = document.getElementById('crop-picker').value;
+    document.getElementById('advisory-text').innerHTML = advisories[crop];
+  }
+
+  /* ── SUBSCRIBE: STATE ── */
+  let activeChannel = 'sms';
+  let generatedOTP  = '';
+  let resendInterval = null;
+  let subscribers   = [];   // in-memory list
+
+  /* ── CHANNEL TOGGLE ── */
+  function setChannel(ch) {
+    activeChannel = ch;
+    ['sms','wa','both'].forEach(id => document.getElementById('btn-'+id).classList.remove('active'));
+    const map = { sms:'btn-sms', whatsapp:'btn-wa', both:'btn-both' };
+    document.getElementById(map[ch]).classList.add('active');
+  }
+
+  /* ── CHIP TOGGLE ── */
+  function toggleChip(el) {
+    el.classList.toggle('selected');
+    el.querySelector('input').checked = el.classList.contains('selected');
+  }
+
+  /* ── VALIDATE & SEND OTP ── */
+  function startSubscribe() {
+    const nameEl  = document.getElementById('sub-name');
+    const phoneEl = document.getElementById('sub-phone');
+    const name    = nameEl.value.trim();
+    const phone   = phoneEl.value.trim();
+
+    nameEl.classList.remove('error');
+    phoneEl.classList.remove('error');
+
+    let valid = true;
+    if (!name) { nameEl.classList.add('error'); nameEl.placeholder = '⚠ Please enter your name'; valid = false; }
+    if (!phone || phone.length !== 10) { phoneEl.classList.add('error'); valid = false; }
+    if (!valid) return;
+
+    // Check if already subscribed
+    if (subscribers.find(s => s.phone === phone)) {
+      phoneEl.classList.add('error');
+      phoneEl.value = '';
+      phoneEl.placeholder = '⚠ This number is already subscribed';
+      return;
+    }
+
+    // Get selected alert types
+    const chips = [...document.querySelectorAll('#alert-chips .opt-chip.selected')];
+    if (chips.length === 0) {
+      alert('Please select at least one alert type.');
+      return;
+    }
+
+    // Generate 4-digit OTP (simulated)
+    generatedOTP = String(Math.floor(1000 + Math.random() * 9000));
+
+    // Show OTP in a friendly simulated "message" banner
+    const channelLabel = activeChannel === 'sms' ? 'SMS' : activeChannel === 'whatsapp' ? 'WhatsApp' : 'SMS & WhatsApp';
+    showOtpNotification(phone, channelLabel, generatedOTP);
+
+    // Switch to OTP screen
+    document.getElementById('otp-phone-display').textContent = '+91 ' + phone;
+    document.getElementById('otp-channel-display').textContent = channelLabel;
+    document.getElementById('sub-form').style.display = 'none';
+    document.getElementById('otp-wrap').style.display = 'flex';
+    document.getElementById('otp1').value = '';
+    document.getElementById('otp2').value = '';
+    document.getElementById('otp3').value = '';
+    document.getElementById('otp4').value = '';
+    document.getElementById('otp1').focus();
+
+    startResendTimer();
+  }
+
+  /* ── SIMULATED OTP NOTIFICATION ── */
+  function showOtpNotification(phone, channel, otp) {
+    // Remove old one if exists
+    const old = document.getElementById('otp-toast');
+    if (old) old.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'otp-toast';
+    toast.style.cssText = `
+      position:fixed; top:80px; left:50%; transform:translateX(-50%);
+      background:#1a3d1a; color:#fff; border:2px solid #4ecd65;
+      border-radius:16px; padding:16px 22px; z-index:9999;
+      max-width:340px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.35);
+      font-family:'DM Sans',sans-serif; animation: slideDown 0.4s ease;
+    `;
+    toast.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:1.4rem">${channel.includes('WhatsApp') ? '💬' : '📱'}</span>
+        <strong style="font-size:0.95rem">Simulated ${channel} Message</strong>
+        <button onclick="this.parentElement.parentElement.remove()" style="margin-left:auto;background:rgba(255,255,255,0.15);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:0.85rem">✕</button>
+      </div>
+      <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:12px;font-size:0.88rem;line-height:1.6">
+        <em style="color:rgba(255,255,255,0.55);font-size:0.75rem">Sent to +91 ${phone}</em><br/>
+        <span style="color:#a8f0b4">KhetMausam Alert:</span> Your verification code is <strong style="font-size:1.3rem;color:#ffdd76;letter-spacing:4px">${otp}</strong>. Valid for 5 minutes. Do not share.
+      </div>
+    `;
+    document.body.appendChild(toast);
+
+    // Auto-remove after 30s
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 30000);
+  }
+
+  /* ── RESEND TIMER ── */
+  function startResendTimer() {
+    let count = 30;
+    document.getElementById('resend-count').textContent = count;
+    document.getElementById('resend-timer').style.display = 'block';
+    if (resendInterval) clearInterval(resendInterval);
+    resendInterval = setInterval(() => {
+      count--;
+      document.getElementById('resend-count').textContent = count;
+      if (count <= 0) {
+        clearInterval(resendInterval);
+        document.getElementById('resend-timer').innerHTML =
+          '<a href="#" onclick="resendOtp(event)" style="color:var(--wheat);text-decoration:none;font-size:0.82rem">↺ Resend code</a>';
+      }
+    }, 1000);
+  }
+
+  function resendOtp(e) {
+    e.preventDefault();
+    const phone = document.getElementById('sub-phone').value.trim();
+    generatedOTP = String(Math.floor(1000 + Math.random() * 9000));
+    const channelLabel = activeChannel === 'sms' ? 'SMS' : activeChannel === 'whatsapp' ? 'WhatsApp' : 'SMS & WhatsApp';
+    showOtpNotification(phone, channelLabel, generatedOTP);
+    startResendTimer();
+  }
+
+  /* ── OTP INPUT HELPERS ── */
+  function otpNext(el, nextId) {
+    el.value = el.value.replace(/\D/g,'');
+    if (el.value && nextId) document.getElementById(nextId).focus();
+    // Auto-verify if all 4 filled
+    const full = ['otp1','otp2','otp3','otp4'].map(id => document.getElementById(id).value).join('');
+    if (full.length === 4) setTimeout(verifyOtp, 300);
+  }
+  function otpBack(e, el, prevId) {
+    if (e.key === 'Backspace' && !el.value && prevId) document.getElementById(prevId).focus();
+  }
+
+  /* ── VERIFY OTP ── */
+  function verifyOtp() {
+    const entered = ['otp1','otp2','otp3','otp4'].map(id => document.getElementById(id).value).join('');
+    if (entered.length < 4) { alert('Please enter the full 4-digit code.'); return; }
+
+    if (entered !== generatedOTP) {
+      // Shake animation on wrong OTP
+      const boxes = document.querySelector('.otp-boxes');
+      boxes.style.animation = 'shake 0.4s ease';
+      setTimeout(() => boxes.style.animation = '', 500);
+      ['otp1','otp2','otp3','otp4'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.borderColor = '#ff7a5c';
+        el.value = '';
+      });
+      document.getElementById('otp1').focus();
+      document.getElementById('resend-timer').innerHTML =
+        '<span style="color:#ff9a7a;font-size:0.8rem">❌ Wrong code. Try again or resend.</span>';
+      return;
+    }
+
+    // SUCCESS — save subscriber
+    const name    = document.getElementById('sub-name').value.trim();
+    const phone   = document.getElementById('sub-phone').value.trim();
+    const chips   = [...document.querySelectorAll('#alert-chips .opt-chip.selected')].map(c => c.textContent.trim());
+    const channel = activeChannel;
+
+    subscribers.push({ name, phone, channel, chips });
+    if (resendInterval) clearInterval(resendInterval);
+
+    // Remove OTP toast
+    const toast = document.getElementById('otp-toast');
+    if (toast) toast.remove();
+
+    // Show success
+    document.getElementById('otp-wrap').style.display = 'none';
+    const channelLabel = channel === 'sms' ? 'SMS' : channel === 'whatsapp' ? 'WhatsApp' : 'SMS & WhatsApp';
+    document.getElementById('success-title').textContent = `${name.split(' ')[0]}, you're subscribed! 🎉`;
+    document.getElementById('success-msg').textContent =
+      `Alerts for ${chips.slice(0,3).join(', ')}${chips.length > 3 ? ' & more' : ''} will be sent to +91 ${phone} via ${channelLabel}.`;
+    document.getElementById('sub-success').style.display = 'flex';
+
+    renderSubscriberList();
+  }
+
+  /* ── CANCEL OTP → BACK TO FORM ── */
+  function cancelOtp() {
+    if (resendInterval) clearInterval(resendInterval);
+    const toast = document.getElementById('otp-toast');
+    if (toast) toast.remove();
+    document.getElementById('otp-wrap').style.display = 'none';
+    document.getElementById('sub-form').style.display = 'block';
+  }
+
+  /* ── RESET FORM ── */
+  function resetSubscribeForm() {
+    document.getElementById('sub-success').style.display = 'none';
+    document.getElementById('sub-form').style.display = 'block';
+    document.getElementById('sub-name').value = '';
+    document.getElementById('sub-phone').value = '';
+    document.getElementById('sub-name').placeholder = 'Your name (e.g. Ramesh Kumar)';
+    document.getElementById('sub-phone').placeholder = '10-digit mobile number';
+    // Reset chips
+    document.querySelectorAll('#alert-chips .opt-chip').forEach((chip, i) => {
+      if (i < 3) { chip.classList.add('selected'); chip.querySelector('input').checked = true; }
+      else       { chip.classList.remove('selected'); chip.querySelector('input').checked = false; }
+    });
+    setChannel('sms');
+  }
+
+  /* ── RENDER SUBSCRIBER LIST ── */
+  function renderSubscriberList() {
+    const wrap = document.getElementById('subscriber-list-wrap');
+    const list = document.getElementById('subscriber-list');
+    document.getElementById('sub-count').textContent = subscribers.length;
+    wrap.style.display = 'block';
+    list.innerHTML = '';
+    subscribers.forEach((s, idx) => {
+      const icon = s.channel === 'whatsapp' ? '💬' : s.channel === 'both' ? '🔔' : '📱';
+      const badge = s.channel === 'whatsapp' ? 'WhatsApp' : s.channel === 'both' ? 'SMS+WA' : 'SMS';
+      const badgeCls = s.channel === 'whatsapp' || s.channel === 'both' ? 'sub-badge wa' : 'sub-badge';
+      const row = document.createElement('div');
+      row.className = 'sub-row';
+      row.innerHTML = `
+        <span class="sub-icon">${icon}</span>
+        <span class="sub-name">${s.name}</span>
+        <span class="sub-num">+91 ${s.phone}</span>
+        <span class="${badgeCls}">${badge}</span>
+        <button class="sub-remove" title="Remove" onclick="removeSubscriber(${idx})">✕</button>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function removeSubscriber(idx) {
+    subscribers.splice(idx, 1);
+    if (subscribers.length === 0) {
+      document.getElementById('subscriber-list-wrap').style.display = 'none';
+    } else {
+      renderSubscriberList();
+    }
+  }
+</script>
+
+<style>
+  @keyframes slideDown {
+    from { opacity:0; transform:translateX(-50%) translateY(-20px); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+  }
+  @keyframes shake {
+    0%,100% { transform:translateX(0); }
+    20%     { transform:translateX(-8px); }
+    40%     { transform:translateX(8px); }
+    60%     { transform:translateX(-6px); }
+    80%     { transform:translateX(6px); }
+  }
+</style>
+</body>
+</html>
